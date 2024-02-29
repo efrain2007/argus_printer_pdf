@@ -115,7 +115,7 @@ namespace {
 				page_height = FPDF_GetPageHeight(pdf_page);
 				logpixelsx = GetDeviceCaps(hDC, LOGPIXELSX);
 				logpixelsy = GetDeviceCaps(hDC, LOGPIXELSY);
-				size_x = 700;
+				size_x = 600;
 				size_y = ((int)page_height / 60 * logpixelsy) +550;
 				//int start_y = i * size_y;
 				FPDF_RenderPage(hDC, pdf_page, 0, 0, size_x, size_y, _orientation, 0);

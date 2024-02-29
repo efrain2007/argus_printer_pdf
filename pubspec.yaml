@@ -1,4 +1,4 @@
-name: windows_printing
+name: argus_printer_pdf
 description: Windows PDF file Printing plugin using PDFium https://pdfium.googlesource.com/pdfium.
 version: 0.0.3
 homepage: https://hamdikahloun.github.io
