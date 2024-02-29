@@ -1,0 +1,6 @@
+# ninja log v5
+6	574	7112836954045046	CMakeFiles/windows_printing_plugin.dir/windows_printing_plugin.cpp.obj	d4a9858aeb25f401
+10	262	7112836954045046	windows_printing_plugin.dll	f83514562a15cf9f
+10	262	7112836954045046	windows_printing_plugin.lib	f83514562a15cf9f
+3	218	7112836954045046	windows_printing_plugin.dll	f83514562a15cf9f
+3	218	7112836954045046	windows_printing_plugin.lib	f83514562a15cf9f

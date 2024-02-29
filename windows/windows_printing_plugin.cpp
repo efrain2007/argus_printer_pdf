@@ -1,38 +1,33 @@
-#include "include/windows_printing/windows_printing_plugin.h"
+
 
 // This must be included before many other Windows headers.
-#include <windows.h>
+#ifndef UNICODE
+#define UNICODE
+#define UNICODE_WAS_UNDEFINED
+#endif
+
+#include <Windows.h>
+
+#ifdef UNICODE_WAS_UNDEFINED
+#undef UNICODE
+#endif
 
 // For getPlatformVersion; remove unless needed for your plugin implementation.
-#include <VersionHelpers.h>
 
-#include <flutter/method_channel.h>
-#include <flutter/plugin_registrar_windows.h>
-#include <flutter/standard_method_codec.h>
+
+
 
 #include <map>
 #include <memory>
 #include <sstream>
-#include <fpdfview.h>
+#include "pdfium/include/fpdfview.h"
 #include <fstream>
+#include <iostream>
 using namespace std;
 
 namespace {
 
-	class WindowsPrintingPlugin : public flutter::Plugin {
-	public:
-		static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
-
-		WindowsPrintingPlugin();
-
-		virtual ~WindowsPrintingPlugin();
-
-	private:
-		// Called when a method is called on this plugin's channel from Dart.
-		void HandleMethodCall(
-			const flutter::MethodCall<flutter::EncodableValue>& method_call,
-			std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
-	};
+	
 
 	std::string printPdfFile(std::string fileprint, std::string printerName, std::string pageNumber, std::string orientation) {
 		wchar_t* wString = new wchar_t[4096];
@@ -44,17 +39,17 @@ namespace {
 		config.m_v8EmbedderSlot = 0;
 		double page_width, page_height;
 		int size_x, size_y, logpixelsx, logpixelsy, _orientation;
-		_orientation = 0 ;
+		_orientation = orientation == "LANDSCAPE_PAGE" ? 1 : 0;
 		FPDF_InitLibraryWithConfig(&config);
 
 		FPDF_DOCUMENT doc;
 		ifstream ifile;
 		ifile.open(fileprint);
 		if (ifile) {
-			cout << "file exists\n";
+			//cout << "file exists\n";
 		}
 		else {
-			cout << "file doesn't exist";
+			//cout << "file doesn't exist";
 			// fileprint.append(" file doesn't exist")
 			return "-1";
 		}
@@ -120,8 +115,8 @@ namespace {
 				page_height = FPDF_GetPageHeight(pdf_page);
 				logpixelsx = GetDeviceCaps(hDC, LOGPIXELSX);
 				logpixelsy = GetDeviceCaps(hDC, LOGPIXELSY);
-				size_x = 555;
-				size_y = ((int)page_height / 72 * logpixelsy) +550;
+				size_x = (int)page_width / 60 * logpixelsx;
+				size_y = (int)page_height / 60 * logpixelsy;
 				//int start_y = i * size_y;
 				FPDF_RenderPage(hDC, pdf_page, 0, 0, size_x, size_y, _orientation, 0);
 				FPDF_ClosePage(pdf_page);
@@ -134,8 +129,8 @@ namespace {
 			page_height = FPDF_GetPageHeight(pdf_page);
 			logpixelsx = GetDeviceCaps(hDC, LOGPIXELSX);
 			logpixelsy = GetDeviceCaps(hDC, LOGPIXELSY);
-			size_x = (int)page_width / 1 * logpixelsx;
-			size_y = (int)page_height / 1 * logpixelsy;
+			size_x = (int)page_width / 60 * logpixelsx;
+			size_y = (int)page_height / 60 * logpixelsy;
 			FPDF_RenderPage(hDC, pdf_page, 0, 0, size_x, size_y, _orientation, 0);
 			FPDF_ClosePage(pdf_page);
 		}
@@ -151,7 +146,7 @@ namespace {
 
 	}
 
-	std::string getPrinterList() {
+	std::string PrinterList() {
 		std::string listPrinter = "";
 		PRINTER_INFO_2* list;
 		DWORD            cnt = 0;
@@ -196,83 +191,22 @@ namespace {
 			}
 
 		}
+
+		//cout << "listPrinter\n";
+	wcout << listPrinter.c_str() << endl;
+
 		return listPrinter;
 	}
 
 
 
-	// static
-	void WindowsPrintingPlugin::RegisterWithRegistrar(
-		flutter::PluginRegistrarWindows* registrar) {
-		auto channel =
-			std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-				registrar->messenger(), "windows_printing",
-				&flutter::StandardMethodCodec::GetInstance());
-
-		auto plugin = std::make_unique<WindowsPrintingPlugin>();
-
-		channel->SetMethodCallHandler(
-			[plugin_pointer = plugin.get()](const auto& call, auto result) {
-			plugin_pointer->HandleMethodCall(call, std::move(result));
-		});
-
-		registrar->AddPlugin(std::move(plugin));
-	}
-
-	WindowsPrintingPlugin::WindowsPrintingPlugin() {}
-
-	WindowsPrintingPlugin::~WindowsPrintingPlugin() {}
-
-	void WindowsPrintingPlugin::HandleMethodCall(
-		const flutter::MethodCall<flutter::EncodableValue>& method_call,
-		std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-		if (method_call.method_name().compare("getPrintersList") == 0)
-		{
-			//flutter::EncodableValue list(std::in_place_type<std::string>);
-
-			//list = getPrinterList();
-
-			result->Success(getPrinterList());
-		}
-		else if (method_call.method_name().compare("printPdf") == 0)
-		{
-			if (!method_call.arguments())
-			{
-				result->Error("Bad arguments", "Expected String");
-				return;
-			}
-			std::string filePrint, printerName, pageNumber, orientation;
-			const auto* arguments = std::get_if<flutter::EncodableMap>(method_call.arguments());
-			auto vl = arguments->find(flutter::EncodableValue("path"));
-			auto vp = arguments->find(flutter::EncodableValue("printer"));
-			auto vn = arguments->find(flutter::EncodableValue("number"));
-			auto vo = arguments->find(flutter::EncodableValue("orientation"));
-			if (vl != arguments->end()) {
-				filePrint = std::get<std::string>(vl->second);
-			}
-			if (vp != arguments->end()) {
-				printerName = std::get<std::string>(vp->second);
-			}
-			if (vn != arguments->end()) {
-				pageNumber = std::get<std::string>(vn->second);
-			}
-			if (vo != arguments->end()) {
-				orientation = std::get<std::string>(vo->second);
-			}
-			std::string st = printPdfFile(filePrint, printerName, pageNumber, orientation);
-			flutter::EncodableValue response(st.c_str());
-			result->Success(&response);
-		}
-		else {
-			result->NotImplemented();
-		}
-	}
+	
 
 }  // namespace
 
-void WindowsPrintingPluginRegisterWithRegistrar(
-	FlutterDesktopPluginRegistrarRef registrar) {
-	WindowsPrintingPlugin::RegisterWithRegistrar(
-		flutter::PluginRegistrarManager::GetInstance()
-		->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
+ int main()
+{
+  PrinterList();
+  cout << "Hello world" << endl;
 }
+

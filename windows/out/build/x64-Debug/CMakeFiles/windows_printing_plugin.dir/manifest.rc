@@ -1,0 +1,2 @@
+#pragma code_page(65001)
+2 /* CREATEPROCESS_MANIFEST_RESOURCE_ID */ 24 /* RT_MANIFEST */ "C:/Users/51925/Documents/flutter/argus_printer_pdf/windows/out/build/x64-Debug/CMakeFiles/windows_printing_plugin.dir/embed.manifest"
